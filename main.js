@@ -1,29 +1,3 @@
-import * as d3 from 'd3';
-import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
-import db from './firebase';
-const addButton = document.getElementById('add');
-
-addButton.onclick = (e) => {
-  return addDoc(collection(db, 'weather'), {
-    // Random temperature between 0-100 degrees
-    temp: Math.round(Math.random() * 100),
-    date: Date.now(),
-  });
-};
-
-// Firestore reference
-const ref = collection(db, 'weather');
-const q = query(ref, limit(20), orderBy('date', 'desc'));
-
-// Update Data source
-// Firestore realtime data stream
-let unsubscribe = onSnapshot(q, (docSnap) => {
-  const data = docSnap.docs.map((doc) => doc.data()).reverse();
-  update(data);
-});
-
-unsubscribe;
-
 // chart styling
 const svgWidth = 800;
 const svgHeight = 600;
@@ -63,38 +37,49 @@ const xAxis = d3.axisBottom(xScale);
 const yAxis = d3
   .axisLeft(yScale)
   .ticks(10)
-  .tickFormat((d) => `${d} degrees`);
+  .tickFormat((d) => `${d}`);
 
 // Update the chart when new data is added
 const update = (data) => {
   // Handle the scaling domains
   xScale.domain(data.map((item) => item.date));
-  yScale.domain([0, d3.max(data, (d) => d.temp)]);
+  yScale.domain([0, d3.max(data, (d) => d.value)]);
 
-  const rects = chart.selectAll('rect').data(data);
+  // const rects = chart.selectAll('rect').data(data);
 
-  //Remove extra nodes from the DOM
-  rects.exit().remove();
+  const line = d3.line()
+                .x(function (d) { return xScale(d.date); })
+                .y(function (d) { return yScale(+d.value); });
 
-  // Initial chart scaling and styling for entries
-  rects
-    .attr('width', xScale.bandwidth)
-    .attr('height', (d) => chartHeight - yScale(d.temp))
-    .attr('x', (d) => xScale(d.date))
-    .attr('y', (d) => yScale(d.temp))
-    .style('fill', 'orange');
+  // //Remove extra nodes from the DOM
+  // rects.exit().remove();
 
-  // chart scaling and styling for new entries
-  rects
-    .enter()
-    .append('rect')
-    .attr('x', (d) => xScale(d.date))
-    .attr('y', (d) => yScale(d.temp))
-    .attr('width', xScale.bandwidth)
-    .transition()
-    .duration(1000)
-    .attr('height', (d) => chartHeight - yScale(d.temp))
-    .style('fill', 'orange') // Bar color
+  // // Initial chart scaling and styling for entries
+  // rects
+  //   .attr('width', xScale.bandwidth)
+  //   .attr('height', (d) => chartHeight - yScale(d.value))
+  //   .attr('x', (d) => xScale(d.date))
+  //   .attr('y', (d) => yScale(d.value))
+  //   .style('fill', 'orange');
+
+  // // chart scaling and styling for new entries
+  // rects
+  //   .enter()
+  //   .append('rect')
+  //   .attr('x', (d) => xScale(d.date))
+  //   .attr('y', (d) => yScale(d.value))
+  //   .attr('width', xScale.bandwidth)
+  //   .transition()
+  //   .duration(1000)
+  //   .attr('height', (d) => chartHeight - yScale(d.value))
+  //   .style('fill', 'orange') // Bar color
+  
+  chart.append("path")
+    .attr("fill", "none")
+    .attr("stroke", "orange")
+    .attr("stroke-miterlimit", 1)
+    .attr("stroke-width", 3)
+    .attr("d", line(data));
 
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
@@ -114,3 +99,4 @@ const update = (data) => {
     .attr('font-size', '0.75rem'); // Temperature(y-axis) font size
 };
 
+d3.json('data.json').then(function (data) { update(data)})

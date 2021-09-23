@@ -1,5 +1,5 @@
-## Realtime Charts with D3.js & Firebase
+## Charts with D3.js & JSON
 
-Build an animated bar chart that updates in realtime with [D3 and Firestore](https://fireship.io/lessons/realtime-charts-d3-firebase).
+Build a bar/line chart with D3 and JSON data source
 
 ![Preview](preview.png)
